@@ -100,6 +100,8 @@ func listKindNodes() ([]string, error) {
 type Collector struct {
 	rd   *ringbuf.Reader
 	kp   link.Link
+	kpTx link.Link
+	kpRx link.Link
 	coll *ebpf.Collection
 }
 
@@ -145,7 +147,51 @@ func NewCollector() (*Collector, error) {
 	}
 
 	c := &Collector{rd: rd, kp: kp, coll: coll}
+
+	if progTx := coll.Programs["kprobe__tcp_sendmsg"]; progTx != nil {
+		if kpTx, err := link.Kprobe("tcp_sendmsg", progTx, nil); err == nil {
+			c.kpTx = kpTx
+		}
+	}
+	if progRx := coll.Programs["kprobe__tcp_cleanup_rbuf"]; progRx != nil {
+		if kpRx, err := link.Kprobe("tcp_cleanup_rbuf", progRx, nil); err == nil {
+			c.kpRx = kpRx
+		}
+	}
+
 	return c, nil
+}
+
+func (c *Collector) HasThroughput() bool {
+	return c.coll.Maps["throughput_map"] != nil
+}
+
+type ThroughputKey struct {
+	SrcIP   [4]byte
+	DstIP   [4]byte
+	SrcPort uint16
+	DstPort uint16
+}
+
+type ThroughputVal struct {
+	TxBytes uint64
+	RxBytes uint64
+}
+
+func (c *Collector) ReadThroughput(fn func(ThroughputKey, ThroughputVal) error) error {
+	tpMap := c.coll.Maps["throughput_map"]
+	if tpMap == nil {
+		return fmt.Errorf("throughput_map not available")
+	}
+	iter := tpMap.Iterate()
+	var key ThroughputKey
+	var val ThroughputVal
+	for iter.Next(&key, &val) {
+		if err := fn(key, val); err != nil {
+			return err
+		}
+	}
+	return iter.Err()
 }
 
 func (c *Collector) Read() (FlowEvent, error) {
@@ -172,6 +218,12 @@ func (c *Collector) Read() (FlowEvent, error) {
 func (c *Collector) Close() {
 	c.rd.Close()
 	c.kp.Close()
+	if c.kpTx != nil {
+		c.kpTx.Close()
+	}
+	if c.kpRx != nil {
+		c.kpRx.Close()
+	}
 	c.coll.Close()
 }
 
