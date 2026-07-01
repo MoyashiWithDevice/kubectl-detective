@@ -98,11 +98,12 @@ func listKindNodes() ([]string, error) {
 }
 
 type Collector struct {
-	rd   *ringbuf.Reader
-	kp   link.Link
-	kpTx link.Link
-	kpRx link.Link
-	coll *ebpf.Collection
+	rd        *ringbuf.Reader
+	kp        link.Link
+	kpTx      link.Link
+	kpRx      link.Link
+	kpRetrans link.Link
+	coll      *ebpf.Collection
 }
 
 func NewCollector() (*Collector, error) {
@@ -158,6 +159,11 @@ func NewCollector() (*Collector, error) {
 			c.kpRx = kpRx
 		}
 	}
+	if progRetrans := coll.Programs["kprobe__tcp_retransmit_skb"]; progRetrans != nil {
+		if kpRetrans, err := link.Kprobe("tcp_retransmit_skb", progRetrans, nil); err == nil {
+			c.kpRetrans = kpRetrans
+		}
+	}
 
 	return c, nil
 }
@@ -186,6 +192,37 @@ func (c *Collector) ReadThroughput(fn func(ThroughputKey, ThroughputVal) error) 
 	iter := tpMap.Iterate()
 	var key ThroughputKey
 	var val ThroughputVal
+	for iter.Next(&key, &val) {
+		if err := fn(key, val); err != nil {
+			return err
+		}
+	}
+	return iter.Err()
+}
+
+type RetransKey struct {
+	SrcIP   [4]byte
+	DstIP   [4]byte
+	SrcPort uint16
+	DstPort uint16
+}
+
+type RetransVal struct {
+	Count uint64
+}
+
+func (c *Collector) HasRetrans() bool {
+	return c.coll.Maps["retrans_map"] != nil
+}
+
+func (c *Collector) ReadRetrans(fn func(RetransKey, RetransVal) error) error {
+	rMap := c.coll.Maps["retrans_map"]
+	if rMap == nil {
+		return fmt.Errorf("retrans_map not available")
+	}
+	iter := rMap.Iterate()
+	var key RetransKey
+	var val RetransVal
 	for iter.Next(&key, &val) {
 		if err := fn(key, val); err != nil {
 			return err
@@ -223,6 +260,9 @@ func (c *Collector) Close() {
 	}
 	if c.kpRx != nil {
 		c.kpRx.Close()
+	}
+	if c.kpRetrans != nil {
+		c.kpRetrans.Close()
 	}
 	c.coll.Close()
 }
