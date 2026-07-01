@@ -16,12 +16,12 @@ import (
 )
 
 var (
-	mapNoResolve   bool
-	mapResolvePod  bool
-	mapResolveSvc  bool
-	mapDuration    time.Duration
-	mapMermaid     bool
-	mapNoHeaders   bool
+	mapNoResolve  bool
+	mapResolvePod bool
+	mapResolveSvc bool
+	mapDuration   time.Duration
+	mapMermaid    bool
+	mapNoHeaders  bool
 )
 
 var mapCmd = &cobra.Command{

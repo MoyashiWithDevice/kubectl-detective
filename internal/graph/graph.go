@@ -38,5 +38,3 @@ func (g *Graph) Edges() []*Edge {
 	}
 	return result
 }
-
-
