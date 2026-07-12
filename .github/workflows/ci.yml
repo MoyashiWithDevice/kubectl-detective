@@ -20,6 +20,15 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: Compile eBPF
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang llvm libbpf-dev
+          clang -O2 -g -target bpf -D__TARGET_ARCH_x86 \
+            -I/usr/include \
+            -c bpf/tcp_connect.bpf.c -o internal/flow/tcp_connect.bpf.o
+          llvm-strip -g internal/flow/tcp_connect.bpf.o
+
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
@@ -35,6 +44,15 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: Compile eBPF
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang llvm libbpf-dev
+          clang -O2 -g -target bpf -D__TARGET_ARCH_x86 \
+            -I/usr/include \
+            -c bpf/tcp_connect.bpf.c -o internal/flow/tcp_connect.bpf.o
+          llvm-strip -g internal/flow/tcp_connect.bpf.o
+
       - name: Unit tests
         run: go test -race -coverprofile=coverage.out ./...
 
@@ -49,7 +67,6 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        goos: [linux, darwin, windows]
         goarch: [amd64, arm64]
     steps:
       - uses: actions/checkout@v4
@@ -58,20 +75,28 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: Compile eBPF
+        if: matrix.goarch == 'amd64'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang llvm libbpf-dev
+          clang -O2 -g -target bpf -D__TARGET_ARCH_x86 \
+            -I/usr/include \
+            -c bpf/tcp_connect.bpf.c -o internal/flow/tcp_connect.bpf.o
+          llvm-strip -g internal/flow/tcp_connect.bpf.o
+
       - name: Build
         env:
-          GOOS: ${{ matrix.goos }}
+          GOOS: linux
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: 0
         run: |
-          EXT=""
-          if [ "$GOOS" = "windows" ]; then EXT=".exe"; fi
-          go build -o bin/kubectl-detective_${GOOS}_${GOARCH}${EXT} .
+          go build -o bin/kubectl-detective_linux_${GOARCH} .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kubectl-detective_${{ matrix.goos }}_${{ matrix.goarch }}
+          name: kubectl-detective_linux_${{ matrix.goarch }}
           path: bin/
 
   helm:
