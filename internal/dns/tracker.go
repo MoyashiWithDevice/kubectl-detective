@@ -122,21 +122,21 @@ func FormatDNS(entries []Record, elapsed time.Duration) string {
 	}
 
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("DNS Latency Ranking (%s)\n", elapsed.Round(time.Second)))
-	b.WriteString(fmt.Sprintf("%-4s %-30s %-10s %-10s %-10s %-8s %s\n",
-		"Rank", "Source → DNS Server", "Avg", "p95", "p99", "Max", "Queries"))
+	fmt.Fprintf(&b, "DNS Latency Ranking (%s)\n", elapsed.Round(time.Second))
+	fmt.Fprintf(&b, "%-4s %-30s %-10s %-10s %-10s %-8s %s\n",
+		"Rank", "Source → DNS Server", "Avg", "p95", "p99", "Max", "Queries")
 	b.WriteString(strings.Repeat("─", 96) + "\n")
 	for i, rec := range entries {
 		rank := i + 1
 		label := fmt.Sprintf("%s → %s", rec.Source, rec.Destination)
-		b.WriteString(fmt.Sprintf("%-4d %-30s %-10s %-10s %-10s %-8s %d\n",
+		fmt.Fprintf(&b, "%-4d %-30s %-10s %-10s %-10s %-8s %d\n",
 			rank, label,
 			latency.FormatDuration(rec.AvgUs),
 			latency.FormatDuration(rec.P95Us),
 			latency.FormatDuration(rec.P99Us),
 			latency.FormatDuration(float64(rec.MaxUs)),
 			rec.Queries,
-		))
+		)
 	}
 	return b.String()
 }

@@ -75,15 +75,15 @@ func FormatRetrans(entries []Record, elapsed time.Duration) string {
 	secs := elapsed.Seconds()
 
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("Retransmission Ranking (%s)\n", elapsed.Round(time.Second)))
-	b.WriteString(fmt.Sprintf("%-4s %-30s %-16s %s\n", "Rank", "Source → Destination", "Retransmits", "Rate"))
+	fmt.Fprintf(&b, "Retransmission Ranking (%s)\n", elapsed.Round(time.Second))
+	fmt.Fprintf(&b, "%-4s %-30s %-16s %s\n", "Rank", "Source → Destination", "Retransmits", "Rate")
 	b.WriteString(strings.Repeat("─", 80) + "\n")
 	for i, rec := range entries {
 		rank := i + 1
 		label := fmt.Sprintf("%s → %s", rec.Source, rec.Destination)
 		rate := float64(rec.Count) / secs
-		b.WriteString(fmt.Sprintf("%-4d %-30s %-16d %s\n",
-			rank, label, rec.Count, formatRate(rate)))
+		fmt.Fprintf(&b, "%-4d %-30s %-16d %s\n",
+			rank, label, rec.Count, formatRate(rate))
 	}
 	return b.String()
 }

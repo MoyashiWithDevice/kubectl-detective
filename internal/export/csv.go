@@ -30,6 +30,6 @@ func WriteCSV(w io.Writer, r *Report) error {
 
 func FormatCSV(r *Report) string {
 	var b strings.Builder
-	WriteCSV(&b, r)
+	_ = WriteCSV(&b, r)
 	return b.String()
 }

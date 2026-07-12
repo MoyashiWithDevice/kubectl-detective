@@ -73,17 +73,17 @@ Use -w for live updating display (like Linux top).`,
 		var r resolver.Resolver
 		switch {
 		case dnsNoResolve:
-			fmt.Fprintln(log, "resolver: disabled (-n)")
+			_, _ = fmt.Fprintln(log, "resolver: disabled (-n)")
 			r = resolver.NewPod(nil, false)
 		case dnsResolvePod:
-			fmt.Fprintln(log, "resolver: pod mode")
+			_, _ = fmt.Fprintln(log, "resolver: pod mode")
 			client, err := kubernetes.NewClient()
 			if err != nil {
 				return fmt.Errorf("kubernetes client: %w", err)
 			}
 			r = resolver.NewPod(client, true)
 		default:
-			fmt.Fprintln(log, "resolver: service mode")
+			_, _ = fmt.Fprintln(log, "resolver: service mode")
 			client, err := kubernetes.NewClient()
 			if err != nil {
 				return fmt.Errorf("kubernetes client: %w", err)
@@ -100,7 +100,7 @@ Use -w for live updating display (like Linux top).`,
 			return runWatchDNS(c, r, sig, log)
 		}
 
-		fmt.Fprintf(log, "Collecting DNS queries for %s...\n", dnsDuration)
+		_, _ = fmt.Fprintf(log, "Collecting DNS queries for %s...\n", dnsDuration)
 		timer := time.After(dnsDuration)
 	loop:
 		for {
@@ -142,7 +142,7 @@ func runWatchDNS(c *flow.Collector, r resolver.Resolver, sig <-chan os.Signal, l
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
-	fmt.Fprintln(log, "Watching DNS... Press Ctrl+C to stop.")
+	_, _ = fmt.Fprintln(log, "Watching DNS... Press Ctrl+C to stop.")
 
 	for {
 		select {

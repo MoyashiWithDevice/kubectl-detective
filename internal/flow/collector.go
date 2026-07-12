@@ -343,14 +343,14 @@ func NewCollector() (*Collector, error) {
 
 	eventsMap := coll.Maps["events"]
 	if eventsMap == nil {
-		kp.Close()
+		_ = kp.Close()
 		coll.Close()
 		return nil, fmt.Errorf("events map not found")
 	}
 
 	rd, err := ringbuf.NewReader(eventsMap)
 	if err != nil {
-		kp.Close()
+		_ = kp.Close()
 		coll.Close()
 		return nil, fmt.Errorf("ringbuf reader: %w", err)
 	}
@@ -555,25 +555,25 @@ func (c *Collector) Read() (FlowEvent, error) {
 }
 
 func (c *Collector) Close() {
-	c.rd.Close()
-	c.kp.Close()
+	_ = c.rd.Close()
+	_ = c.kp.Close()
 	if c.kpTx != nil {
-		c.kpTx.Close()
+		_ = c.kpTx.Close()
 	}
 	if c.kpRx != nil {
-		c.kpRx.Close()
+		_ = c.kpRx.Close()
 	}
 	if c.kpRetrans != nil {
-		c.kpRetrans.Close()
+		_ = c.kpRetrans.Close()
 	}
 	if c.kpRTT != nil {
-		c.kpRTT.Close()
+		_ = c.kpRTT.Close()
 	}
 	if c.kpDNSSend != nil {
-		c.kpDNSSend.Close()
+		_ = c.kpDNSSend.Close()
 	}
 	if c.kpDNSRecv != nil {
-		c.kpDNSRecv.Close()
+		_ = c.kpDNSRecv.Close()
 	}
 	c.coll.Close()
 }

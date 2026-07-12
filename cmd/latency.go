@@ -73,17 +73,17 @@ Use -w for live updating display (like Linux top).`,
 		var r resolver.Resolver
 		switch {
 		case latencyNoResolve:
-			fmt.Fprintln(log, "resolver: disabled (-n)")
+			_, _ = fmt.Fprintln(log, "resolver: disabled (-n)")
 			r = resolver.NewPod(nil, false)
 		case latencyResolvePod:
-			fmt.Fprintln(log, "resolver: pod mode")
+			_, _ = fmt.Fprintln(log, "resolver: pod mode")
 			client, err := kubernetes.NewClient()
 			if err != nil {
 				return fmt.Errorf("kubernetes client: %w", err)
 			}
 			r = resolver.NewPod(client, true)
 		default:
-			fmt.Fprintln(log, "resolver: service mode")
+			_, _ = fmt.Fprintln(log, "resolver: service mode")
 			client, err := kubernetes.NewClient()
 			if err != nil {
 				return fmt.Errorf("kubernetes client: %w", err)
@@ -100,7 +100,7 @@ Use -w for live updating display (like Linux top).`,
 			return runWatchLatency(c, r, sig, log)
 		}
 
-		fmt.Fprintf(log, "Collecting RTT samples for %s...\n", latencyDuration)
+		_, _ = fmt.Fprintf(log, "Collecting RTT samples for %s...\n", latencyDuration)
 		timer := time.After(latencyDuration)
 	loop:
 		for {
@@ -142,7 +142,7 @@ func runWatchLatency(c *flow.Collector, r resolver.Resolver, sig <-chan os.Signa
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
-	fmt.Fprintln(log, "Watching latency... Press Ctrl+C to stop.")
+	_, _ = fmt.Fprintln(log, "Watching latency... Press Ctrl+C to stop.")
 
 	for {
 		select {

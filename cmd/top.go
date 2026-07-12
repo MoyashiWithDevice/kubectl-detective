@@ -87,17 +87,17 @@ Default output shows per-connection top talkers. Use --endpoints for per-endpoin
 		var r resolver.Resolver
 		switch {
 		case topNoResolve:
-			fmt.Fprintln(log, "resolver: disabled (-n)")
+			_, _ = fmt.Fprintln(log, "resolver: disabled (-n)")
 			r = resolver.NewPod(nil, false)
 		case topResolvePod:
-			fmt.Fprintln(log, "resolver: pod mode")
+			_, _ = fmt.Fprintln(log, "resolver: pod mode")
 			client, err := kubernetes.NewClient()
 			if err != nil {
 				return fmt.Errorf("kubernetes client: %w", err)
 			}
 			r = resolver.NewPod(client, true)
 		default:
-			fmt.Fprintln(log, "resolver: service mode")
+			_, _ = fmt.Fprintln(log, "resolver: service mode")
 			client, err := kubernetes.NewClient()
 			if err != nil {
 				return fmt.Errorf("kubernetes client: %w", err)
@@ -117,7 +117,7 @@ Default output shows per-connection top talkers. Use --endpoints for per-endpoin
 		}
 
 		if topDuration > 0 {
-			fmt.Fprintf(log, "Collecting throughput for %s...\n", topDuration)
+			_, _ = fmt.Fprintf(log, "Collecting throughput for %s...\n", topDuration)
 			timer := time.After(topDuration)
 		loop:
 			for {

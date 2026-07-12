@@ -3,7 +3,6 @@ package agent
 import (
 	"context"
 	"fmt"
-	"net"
 	"os"
 	"time"
 
@@ -51,7 +50,7 @@ func (a *Agent) Run(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("connect aggregator: %w", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	client := detectivev1.NewAgentServiceClient(conn)
 
@@ -90,7 +89,7 @@ func (a *Agent) collect(c *flow.Collector) *detectivev1.AgentSnapshot {
 		Timestamp: time.Now().UnixNano(),
 	}
 
-	c.ReadThroughput(func(k flow.ThroughputKey, v flow.ThroughputVal) error {
+	_ = c.ReadThroughput(func(k flow.ThroughputKey, v flow.ThroughputVal) error {
 		snap.Throughput = append(snap.Throughput, &detectivev1.ThroughputEntry{
 			SrcIp:   k.SrcIP[:],
 			DstIp:   k.DstIP[:],
@@ -102,7 +101,7 @@ func (a *Agent) collect(c *flow.Collector) *detectivev1.AgentSnapshot {
 		return nil
 	})
 
-	c.ReadRetrans(func(k flow.RetransKey, v flow.RetransVal) error {
+	_ = c.ReadRetrans(func(k flow.RetransKey, v flow.RetransVal) error {
 		snap.Retrans = append(snap.Retrans, &detectivev1.RetransEntry{
 			SrcIp:   k.SrcIP[:],
 			DstIp:   k.DstIP[:],
@@ -113,7 +112,7 @@ func (a *Agent) collect(c *flow.Collector) *detectivev1.AgentSnapshot {
 		return nil
 	})
 
-	c.ReadRTT(func(k flow.RTTKey, v flow.RTTVal) error {
+	_ = c.ReadRTT(func(k flow.RTTKey, v flow.RTTVal) error {
 		snap.Rtt = append(snap.Rtt, &detectivev1.RTTEntry{
 			SrcIp:   k.SrcIP[:],
 			DstIp:   k.DstIP[:],
@@ -128,7 +127,7 @@ func (a *Agent) collect(c *flow.Collector) *detectivev1.AgentSnapshot {
 		return nil
 	})
 
-	c.ReadDNSStats(func(k flow.DNSStatsKey, v flow.DNSStatsVal) error {
+	_ = c.ReadDNSStats(func(k flow.DNSStatsKey, v flow.DNSStatsVal) error {
 		snap.Dns = append(snap.Dns, &detectivev1.DNSEntry{
 			SrcIp: k.SrcIP[:],
 			DstIp: k.DstIP[:],
@@ -152,27 +151,4 @@ func DefaultNodeName() string {
 	return name
 }
 
-func nodeIPs() []string {
-	ifaces, err := net.Interfaces()
-	if err != nil {
-		return nil
-	}
-	var ips []string
-	for _, iface := range ifaces {
-		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
-			continue
-		}
-		addrs, err := iface.Addrs()
-		if err != nil {
-			continue
-		}
-		for _, addr := range addrs {
-			if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-				if ipnet.IP.To4() != nil {
-					ips = append(ips, ipnet.IP.String())
-				}
-			}
-		}
-	}
-	return ips
-}
+

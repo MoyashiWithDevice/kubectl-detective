@@ -33,7 +33,7 @@ network metrics collected from all node agents.`,
 		if err != nil {
 			return fmt.Errorf("connect aggregator: %w", err)
 		}
-		defer conn.Close()
+		defer func() { _ = conn.Close() }()
 
 		client := detectivev1.NewDetectiveServiceClient(conn)
 

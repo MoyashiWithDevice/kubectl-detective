@@ -253,18 +253,18 @@ func FormatTalkers(talkers []Talker, elapsed time.Duration, unit byte) string {
 	table := ComputeMbps(talkers, elapsed)
 
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("Top Talkers (%s)\n", elapsed.Round(time.Second)))
-	b.WriteString(fmt.Sprintf("%-4s %-24s %-14s %-14s %s\n", "Rank", "Source → Destination", "TX", "RX", "Total"))
+	fmt.Fprintf(&b, "Top Talkers (%s)\n", elapsed.Round(time.Second))
+	fmt.Fprintf(&b, "%-4s %-24s %-14s %-14s %s\n", "Rank", "Source → Destination", "TX", "RX", "Total")
 	b.WriteString(strings.Repeat("─", 80) + "\n")
 	for i, talker := range table {
 		rank := i + 1
 		label := fmt.Sprintf("%s → %s", talker.Source, talker.Destination)
-		b.WriteString(fmt.Sprintf("%-4d %-24s %-14s %-14s %s\n",
+		fmt.Fprintf(&b, "%-4d %-24s %-14s %-14s %s\n",
 			rank, label,
 			FormatMbps(talker.TxMbps),
 			FormatMbps(talker.RxMbps),
 			FormatBytes(talker.TotalBytes, unit),
-		))
+		)
 	}
 	return b.String()
 }
@@ -276,19 +276,19 @@ func FormatEndpoints(endpoints []PerNameStats, elapsed time.Duration, unit byte)
 	secs := elapsed.Seconds()
 
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("Top Endpoints (%s)\n", elapsed.Round(time.Second)))
-	b.WriteString(fmt.Sprintf("%-4s %-24s %-14s %-14s %s\n", "Rank", "Name", "TX", "RX", "Total"))
+	fmt.Fprintf(&b, "Top Endpoints (%s)\n", elapsed.Round(time.Second))
+	fmt.Fprintf(&b, "%-4s %-24s %-14s %-14s %s\n", "Rank", "Name", "TX", "RX", "Total")
 	b.WriteString(strings.Repeat("─", 80) + "\n")
 	for i, ep := range endpoints {
 		rank := i + 1
 		txMbps := float64(ep.TxBytes) * 8 / (secs * 1000000)
 		rxMbps := float64(ep.RxBytes) * 8 / (secs * 1000000)
-		b.WriteString(fmt.Sprintf("%-4d %-24s %-14s %-14s %s\n",
+		fmt.Fprintf(&b, "%-4d %-24s %-14s %-14s %s\n",
 			rank, ep.Name,
 			FormatMbps(txMbps),
 			FormatMbps(rxMbps),
 			FormatBytes(ep.TotalBytes, unit),
-		))
+		)
 	}
 	return b.String()
 }

@@ -34,7 +34,7 @@ func TestResolve_Found(t *testing.T) {
 			PodIP: "10.0.0.1",
 		},
 	}
-	client.CoreV1().Pods("default").Create(context.TODO(), pod, metav1.CreateOptions{})
+	_, _ = client.CoreV1().Pods("default").Create(context.TODO(), pod, metav1.CreateOptions{})
 
 	r := NewPod(client, true)
 	defer r.Close()
@@ -58,7 +58,7 @@ func TestResolve_NotFound(t *testing.T) {
 			PodIP: "10.0.0.1",
 		},
 	}
-	client.CoreV1().Pods("default").Create(context.TODO(), pod, metav1.CreateOptions{})
+	_, _ = client.CoreV1().Pods("default").Create(context.TODO(), pod, metav1.CreateOptions{})
 
 	r := NewPod(client, true)
 	defer r.Close()
@@ -79,7 +79,7 @@ func TestResolve_MultiplePods(t *testing.T) {
 		{ObjectMeta: metav1.ObjectMeta{Name: "redis", Namespace: "default"}, Status: v1.PodStatus{PodIP: "10.0.0.3"}},
 	}
 	for _, pod := range pods {
-		client.CoreV1().Pods("default").Create(context.TODO(), pod, metav1.CreateOptions{})
+		_, _ = client.CoreV1().Pods("default").Create(context.TODO(), pod, metav1.CreateOptions{})
 	}
 
 	r := NewPod(client, true)
@@ -126,7 +126,7 @@ func TestServiceResolver_ClusterIP(t *testing.T) {
 			ClusterIP: "10.96.0.1",
 		},
 	}
-	client.CoreV1().Services("default").Create(context.TODO(), svc, metav1.CreateOptions{})
+	_, _ = client.CoreV1().Services("default").Create(context.TODO(), svc, metav1.CreateOptions{})
 
 	r := NewService(client, true)
 	defer r.Close()
@@ -151,7 +151,7 @@ func TestServiceResolver_ExternalIP(t *testing.T) {
 			ExternalIPs: []string{"203.0.113.1"},
 		},
 	}
-	client.CoreV1().Services("default").Create(context.TODO(), svc, metav1.CreateOptions{})
+	_, _ = client.CoreV1().Services("default").Create(context.TODO(), svc, metav1.CreateOptions{})
 
 	r := NewService(client, true)
 	defer r.Close()
@@ -185,7 +185,7 @@ func TestServiceResolver_FallbackToPod(t *testing.T) {
 			PodIP: "10.244.0.5",
 		},
 	}
-	client.CoreV1().Pods("default").Create(context.TODO(), pod, metav1.CreateOptions{})
+	_, _ = client.CoreV1().Pods("default").Create(context.TODO(), pod, metav1.CreateOptions{})
 
 	r := NewService(client, true)
 	defer r.Close()
@@ -210,7 +210,7 @@ func TestServiceResolver_ServicePreferred(t *testing.T) {
 			PodIP: "10.244.0.5",
 		},
 	}
-	client.CoreV1().Pods("default").Create(context.TODO(), pod, metav1.CreateOptions{})
+	_, _ = client.CoreV1().Pods("default").Create(context.TODO(), pod, metav1.CreateOptions{})
 
 	svc := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -221,7 +221,7 @@ func TestServiceResolver_ServicePreferred(t *testing.T) {
 			ClusterIP: "10.96.0.1",
 		},
 	}
-	client.CoreV1().Services("default").Create(context.TODO(), svc, metav1.CreateOptions{})
+	_, _ = client.CoreV1().Services("default").Create(context.TODO(), svc, metav1.CreateOptions{})
 
 	// EndpointSlice linking the Pod IP to the Service
 	eps := &discoveryv1.EndpointSlice{
@@ -234,7 +234,7 @@ func TestServiceResolver_ServicePreferred(t *testing.T) {
 			{Addresses: []string{"10.244.0.5"}},
 		},
 	}
-	client.DiscoveryV1().EndpointSlices("default").Create(context.TODO(), eps, metav1.CreateOptions{})
+	_, _ = client.DiscoveryV1().EndpointSlices("default").Create(context.TODO(), eps, metav1.CreateOptions{})
 
 	r := NewService(client, true)
 	defer r.Close()

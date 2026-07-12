@@ -45,6 +45,6 @@ func WriteJSON(w io.Writer, r *Report) error {
 
 func FormatJSON(r *Report) string {
 	var b strings.Builder
-	WriteJSON(&b, r)
+	_ = WriteJSON(&b, r)
 	return b.String()
 }

@@ -69,17 +69,17 @@ Use --no-headers to suppress progress messages (useful for piping).`,
 		var r resolver.Resolver
 		switch {
 		case flowsNoResolve:
-			fmt.Fprintln(log, "resolver: disabled (-n)")
+			_, _ = fmt.Fprintln(log, "resolver: disabled (-n)")
 			r = resolver.NewPod(nil, false)
 		case flowsResolvePod:
-			fmt.Fprintln(log, "resolver: pod mode")
+			_, _ = fmt.Fprintln(log, "resolver: pod mode")
 			client, err := kubernetes.NewClient()
 			if err != nil {
 				return fmt.Errorf("kubernetes client: %w", err)
 			}
 			r = resolver.NewPod(client, true)
 		default:
-			fmt.Fprintln(log, "resolver: service mode")
+			_, _ = fmt.Fprintln(log, "resolver: service mode")
 			client, err := kubernetes.NewClient()
 			if err != nil {
 				return fmt.Errorf("kubernetes client: %w", err)
@@ -97,7 +97,7 @@ Use --no-headers to suppress progress messages (useful for piping).`,
 
 		if flowsWatch {
 			if !flowsNoHeaders {
-				fmt.Fprintln(log, "Capturing TCP flows... Ctrl+D or Ctrl+C to stop.")
+				_, _ = fmt.Fprintln(log, "Capturing TCP flows... Ctrl+D or Ctrl+C to stop.")
 			}
 			sig := make(chan os.Signal, 1)
 			signal.Notify(sig, os.Interrupt)
@@ -106,7 +106,7 @@ Use --no-headers to suppress progress messages (useful for piping).`,
 			done := make(chan struct{})
 			go func() {
 				buf := make([]byte, 1)
-				os.Stdin.Read(buf)
+				_, _ = os.Stdin.Read(buf)
 				close(done)
 			}()
 			for {
@@ -130,7 +130,7 @@ Use --no-headers to suppress progress messages (useful for piping).`,
 			signal.Notify(sig, os.Interrupt)
 			defer signal.Stop(sig)
 
-			fmt.Fprintf(log, "Collecting flows for %s...\n", flowsDuration)
+			_, _ = fmt.Fprintf(log, "Collecting flows for %s...\n", flowsDuration)
 			timer := time.After(flowsDuration)
 		loop:
 			for {

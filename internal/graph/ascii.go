@@ -46,9 +46,9 @@ func (g *Graph) ASCII() string {
 		outs := srcEdges[src]
 		if len(outs) == 1 {
 			o := outs[0]
-			b.WriteString(fmt.Sprintf("%s ──→ %s", src, o.dst))
+			fmt.Fprintf(&b, "%s ──→ %s", src, o.dst)
 			if o.count > 1 {
-				b.WriteString(fmt.Sprintf("  (%d connections)", o.count))
+				fmt.Fprintf(&b, "  (%d connections)", o.count)
 			}
 			b.WriteString("\n")
 			continue
@@ -59,9 +59,9 @@ func (g *Graph) ASCII() string {
 			if j == len(outs)-1 {
 				prefix = "  └─→ "
 			}
-			b.WriteString(fmt.Sprintf("%s%s", prefix, o.dst))
+			fmt.Fprintf(&b, "%s%s", prefix, o.dst)
 			if o.count > 1 {
-				b.WriteString(fmt.Sprintf("  (%d connections)", o.count))
+				fmt.Fprintf(&b, "  (%d connections)", o.count)
 			}
 			b.WriteString("\n")
 		}

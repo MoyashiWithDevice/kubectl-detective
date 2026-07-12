@@ -34,7 +34,7 @@ func NewService(client kubernetes.Interface, enabled bool) *ServiceResolver {
 	// 1. List Pods (fallback: IP → Pod name)
 	pods, err := client.CoreV1().Pods(v1.NamespaceAll).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
-		fmt.Fprintf(logWriter, "resolver(svc): List pods failed: %v\n", err)
+		_, _ = fmt.Fprintf(logWriter, "resolver(svc): List pods failed: %v\n", err)
 	} else {
 		for i := range pods.Items {
 			p := &pods.Items[i]
@@ -47,24 +47,24 @@ func NewService(client kubernetes.Interface, enabled bool) *ServiceResolver {
 	// 2. List Services (ClusterIP, ExternalIP, LoadBalancer IP)
 	svcs, err := client.CoreV1().Services(v1.NamespaceAll).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
-		fmt.Fprintf(logWriter, "resolver(svc): List Services failed: %v\n", err)
+		_, _ = fmt.Fprintf(logWriter, "resolver(svc): List Services failed: %v\n", err)
 	} else {
 		for i := range svcs.Items {
 			r.addService(&svcs.Items[i])
 		}
-		fmt.Fprintf(logWriter, "resolver(svc): loaded %d services (%d svc IPs, %d pod IPs)\n",
+		_, _ = fmt.Fprintf(logWriter, "resolver(svc): loaded %d services (%d svc IPs, %d pod IPs)\n",
 			len(svcs.Items), len(r.ipSvc), len(r.ipPod))
 	}
 
 	// 3. List EndpointSlices (PodIP → Service name)
 	eps, err := client.DiscoveryV1().EndpointSlices(v1.NamespaceAll).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
-		fmt.Fprintf(logWriter, "resolver(svc): List EndpointSlices failed: %v\n", err)
+		_, _ = fmt.Fprintf(logWriter, "resolver(svc): List EndpointSlices failed: %v\n", err)
 	} else {
 		for i := range eps.Items {
 			r.addSlice(&eps.Items[i])
 		}
-		fmt.Fprintf(logWriter, "resolver(svc): loaded %d endpointslices (%d svc IPs, %d pod IPs)\n",
+		_, _ = fmt.Fprintf(logWriter, "resolver(svc): loaded %d endpointslices (%d svc IPs, %d pod IPs)\n",
 			len(eps.Items), len(r.ipSvc), len(r.ipPod))
 	}
 
@@ -125,7 +125,7 @@ func (r *ServiceResolver) addSlice(slice *discoveryv1.EndpointSlice) {
 func (r *ServiceResolver) watchPods(client kubernetes.Interface) {
 	wi, err := client.CoreV1().Pods(v1.NamespaceAll).Watch(context.Background(), metav1.ListOptions{})
 	if err != nil {
-		fmt.Fprintf(logWriter, "resolver(svc): Watch pods failed: %v\n", err)
+		_, _ = fmt.Fprintf(logWriter, "resolver(svc): Watch pods failed: %v\n", err)
 		return
 	}
 	defer wi.Stop()
@@ -136,7 +136,7 @@ func (r *ServiceResolver) watchPods(client kubernetes.Interface) {
 			return
 		case ev, ok := <-wi.ResultChan():
 			if !ok {
-				fmt.Fprintf(logWriter, "resolver(svc): Watch pods channel closed, restarting...\n")
+				_, _ = fmt.Fprintf(logWriter, "resolver(svc): Watch pods channel closed, restarting...\n")
 				go r.watchPods(client)
 				return
 			}
@@ -161,7 +161,7 @@ func (r *ServiceResolver) watchPods(client kubernetes.Interface) {
 func (r *ServiceResolver) watchServices(client kubernetes.Interface) {
 	wi, err := client.CoreV1().Services(v1.NamespaceAll).Watch(context.Background(), metav1.ListOptions{})
 	if err != nil {
-		fmt.Fprintf(logWriter, "resolver(svc): Watch Services failed: %v\n", err)
+		_, _ = fmt.Fprintf(logWriter, "resolver(svc): Watch Services failed: %v\n", err)
 		return
 	}
 	defer wi.Stop()
@@ -172,7 +172,7 @@ func (r *ServiceResolver) watchServices(client kubernetes.Interface) {
 			return
 		case ev, ok := <-wi.ResultChan():
 			if !ok {
-				fmt.Fprintf(logWriter, "resolver(svc): Watch Services channel closed, restarting...\n")
+				_, _ = fmt.Fprintf(logWriter, "resolver(svc): Watch Services channel closed, restarting...\n")
 				go r.watchServices(client)
 				return
 			}
@@ -200,7 +200,7 @@ func (r *ServiceResolver) watchServices(client kubernetes.Interface) {
 func (r *ServiceResolver) watchSlices(client kubernetes.Interface) {
 	wi, err := client.DiscoveryV1().EndpointSlices(v1.NamespaceAll).Watch(context.Background(), metav1.ListOptions{})
 	if err != nil {
-		fmt.Fprintf(logWriter, "resolver(svc): Watch EndpointSlices failed: %v\n", err)
+		_, _ = fmt.Fprintf(logWriter, "resolver(svc): Watch EndpointSlices failed: %v\n", err)
 		return
 	}
 	defer wi.Stop()
@@ -211,7 +211,7 @@ func (r *ServiceResolver) watchSlices(client kubernetes.Interface) {
 			return
 		case ev, ok := <-wi.ResultChan():
 			if !ok {
-				fmt.Fprintf(logWriter, "resolver(svc): Watch EndpointSlices channel closed, restarting...\n")
+				_, _ = fmt.Fprintf(logWriter, "resolver(svc): Watch EndpointSlices channel closed, restarting...\n")
 				go r.watchSlices(client)
 				return
 			}

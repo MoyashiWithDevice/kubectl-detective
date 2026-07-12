@@ -86,6 +86,6 @@ func WriteHTML(w io.Writer, r *Report) error {
 
 func FormatHTML(r *Report) string {
 	var b strings.Builder
-	WriteHTML(&b, r)
+	_ = WriteHTML(&b, r)
 	return b.String()
 }

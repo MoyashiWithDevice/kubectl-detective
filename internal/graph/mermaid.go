@@ -30,7 +30,7 @@ func (g *Graph) Mermaid() string {
 	for _, n := range sortedNodes {
 		id := sanitizeNodeID(n)
 		if id != n {
-			b.WriteString(fmt.Sprintf("    %s[%s]\n", id, n))
+			fmt.Fprintf(&b, "    %s[%s]\n", id, n)
 		}
 	}
 
@@ -48,7 +48,7 @@ func (g *Graph) Mermaid() string {
 		if e.Count > 1 {
 			label = fmt.Sprintf(" |%d flows|", e.Count)
 		}
-		b.WriteString(fmt.Sprintf("    %s -->%s %s\n", srcID, label, dstID))
+		fmt.Fprintf(&b, "    %s -->%s %s\n", srcID, label, dstID)
 	}
 
 	return b.String()

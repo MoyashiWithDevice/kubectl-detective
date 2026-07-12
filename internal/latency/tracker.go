@@ -184,21 +184,21 @@ func FormatLatency(entries []Record, elapsed time.Duration) string {
 	}
 
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("Latency Ranking (%s)\n", elapsed.Round(time.Second)))
-	b.WriteString(fmt.Sprintf("%-4s %-30s %-10s %-10s %-10s %-8s %s\n",
-		"Rank", "Source → Destination", "Avg", "p95", "p99", "Max", "Samples"))
+	fmt.Fprintf(&b, "Latency Ranking (%s)\n", elapsed.Round(time.Second))
+	fmt.Fprintf(&b, "%-4s %-30s %-10s %-10s %-10s %-8s %s\n",
+		"Rank", "Source → Destination", "Avg", "p95", "p99", "Max", "Samples")
 	b.WriteString(strings.Repeat("─", 96) + "\n")
 	for i, rec := range entries {
 		rank := i + 1
 		label := fmt.Sprintf("%s → %s", rec.Source, rec.Destination)
-		b.WriteString(fmt.Sprintf("%-4d %-30s %-10s %-10s %-10s %-8s %d\n",
+		fmt.Fprintf(&b, "%-4d %-30s %-10s %-10s %-10s %-8s %d\n",
 			rank, label,
 			FormatDuration(rec.AvgUs),
 			FormatDuration(rec.P95Us),
 			FormatDuration(rec.P99Us),
 			FormatDuration(float64(rec.MaxUs)),
 			rec.Samples,
-		))
+		)
 	}
 	return b.String()
 }

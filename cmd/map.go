@@ -68,7 +68,7 @@ Use --no-headers to suppress progress messages (useful for file redirect).`,
 					if err != nil {
 						return fmt.Errorf("create output file: %w", err)
 					}
-					defer f.Close()
+					defer func() { _ = f.Close() }()
 					return flow.RunInKindTo("map", f, extra...)
 				}
 				return flow.RunInKind("map", extra...)
@@ -86,17 +86,17 @@ Use --no-headers to suppress progress messages (useful for file redirect).`,
 		var r resolver.Resolver
 		switch {
 		case mapNoResolve:
-			fmt.Fprintln(log, "resolver: disabled (-n)")
+			_, _ = fmt.Fprintln(log, "resolver: disabled (-n)")
 			r = resolver.NewPod(nil, false)
 		case mapResolvePod:
-			fmt.Fprintln(log, "resolver: pod mode")
+			_, _ = fmt.Fprintln(log, "resolver: pod mode")
 			client, err := kubernetes.NewClient()
 			if err != nil {
 				return fmt.Errorf("kubernetes client: %w", err)
 			}
 			r = resolver.NewPod(client, true)
 		default:
-			fmt.Fprintln(log, "resolver: service mode")
+			_, _ = fmt.Fprintln(log, "resolver: service mode")
 			client, err := kubernetes.NewClient()
 			if err != nil {
 				return fmt.Errorf("kubernetes client: %w", err)
@@ -117,7 +117,7 @@ Use --no-headers to suppress progress messages (useful for file redirect).`,
 			signal.Notify(sig, os.Interrupt)
 			defer signal.Stop(sig)
 
-			fmt.Fprintf(log, "Collecting flows for %s...\n", mapDuration)
+			_, _ = fmt.Fprintf(log, "Collecting flows for %s...\n", mapDuration)
 			timer := time.After(mapDuration)
 		loop:
 			for {
@@ -149,9 +149,9 @@ Use --no-headers to suppress progress messages (useful for file redirect).`,
 			if err != nil {
 				return fmt.Errorf("create output file: %w", err)
 			}
-			defer f.Close()
+			defer func() { _ = f.Close() }()
 			out = f
-			fmt.Fprintf(log, "Writing %s to %s\n", format, mapFile)
+			_, _ = fmt.Fprintf(log, "Writing %s to %s\n", format, mapFile)
 		}
 
 		switch format {
@@ -166,7 +166,7 @@ Use --no-headers to suppress progress messages (useful for file redirect).`,
 			return err
 		default:
 			if !mapNoHeaders && mapFile == "" {
-				fmt.Fprint(out, "Service Map\n═══════════\n\n")
+				_, _ = fmt.Fprint(out, "Service Map\n═══════════\n\n")
 			}
 			_, err := fmt.Fprint(out, g.ASCII())
 			return err
@@ -177,7 +177,7 @@ Use --no-headers to suppress progress messages (useful for file redirect).`,
 // runMapWatch collects flows continuously. Returns true if interrupted by Ctrl+C.
 func runMapWatch(c *flow.Collector, r resolver.Resolver, g *graph.Graph, log io.Writer) bool {
 	if !mapNoHeaders {
-		fmt.Fprintln(log, "Collecting flows... Ctrl+D to show results, Ctrl+C to quit.")
+		_, _ = fmt.Fprintln(log, "Collecting flows... Ctrl+D to show results, Ctrl+C to quit.")
 	}
 
 	sig := make(chan os.Signal, 1)
@@ -187,7 +187,7 @@ func runMapWatch(c *flow.Collector, r resolver.Resolver, g *graph.Graph, log io.
 	done := make(chan struct{})
 	go func() {
 		buf := make([]byte, 1)
-		os.Stdin.Read(buf)
+		_, _ = os.Stdin.Read(buf)
 		close(done)
 	}()
 
