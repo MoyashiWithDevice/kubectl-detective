@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os/exec"
+	"strings"
 	"time"
 
 	detectivev1 "github.com/moyashiwithdevice/kubectl-detective/api/detective/v1"
@@ -27,32 +29,26 @@ var statusCmd = &cobra.Command{
 	Long: `Connect to the detective aggregator and display aggregated
 network metrics collected from all node agents.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		conn, err := grpc.NewClient(statusAddr,
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
-		)
-		if err != nil {
-			return fmt.Errorf("connect aggregator: %w", err)
+		// If user explicitly set --aggregator, connect directly.
+		if cmd.Flags().Changed("aggregator") {
+			return runStatusDirectly(statusAddr, statusOutput)
 		}
-		defer func() { _ = conn.Close() }()
 
-		client := detectivev1.NewDetectiveServiceClient(conn)
+		// Auto-discover: try localhost (port-forward), then in-cluster service, then kind.
+		if err := probeAggregator(statusAddr); err == nil {
+			return runStatusDirectly(statusAddr, statusOutput)
+		}
 
-		// Probe whether the host aggregator has data. If empty or unreachable,
-		// the agent is likely inside a kind node — forward the query there.
-		// Skip if we're already inside kind (prevent infinite recursion).
+		if aggAddr, cleanup, err := forwardToInClusterAggregator(); err == nil {
+			defer cleanup()
+			return runStatusDirectly(aggAddr, statusOutput)
+		}
+
 		if !statusInKind {
-			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-			empty := hostAggregatorEmpty(client, ctx)
-			cancel()
-			if empty {
-				return runStatusInKind(statusAddr, statusOutput)
-			}
+			return runStatusInKind(statusAddr, statusOutput)
 		}
 
-		ctx2, cancel2 := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel2()
-
-		return runStatus(ctx2, client, statusOutput)
+		return fmt.Errorf("no reachable aggregator\n  deploy: kubectl apply -f deploy/\n  or:    kubectl port-forward -n detective svc/detective-aggregator 50051:50051")
 	},
 }
 
@@ -101,22 +97,80 @@ func runStatus(ctx context.Context, client detectivev1.DetectiveServiceClient, o
 	}
 }
 
-// hostAggregatorEmpty returns true if the host aggregator has no data
-// (or is unreachable), indicating the agent data likely lives inside
-// a kind node with a separate aggregator.
-func hostAggregatorEmpty(client detectivev1.DetectiveServiceClient, ctx context.Context) bool {
-	top, err := client.GetTop(ctx, &detectivev1.Empty{})
+// probeAggregator returns nil if the gRPC address responds.
+func probeAggregator(addr string) error {
+	conn, err := grpc.NewClient(addr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
 	if err != nil {
-		return true // unreachable or error — assume kind
+		return err
 	}
-	if len(top.Talkers) > 0 {
-		return false
-	}
-	lat, err := client.GetLatency(ctx, &detectivev1.Empty{})
+	defer func() { _ = conn.Close() }()
+
+	client := detectivev1.NewDetectiveServiceClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	_, err = client.GetTop(ctx, &detectivev1.Empty{})
+	return err
+}
+
+// runStatusDirectly connects to the given aggregator address and runs status.
+func runStatusDirectly(addr string, output string) error {
+	conn, err := grpc.NewClient(addr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
 	if err != nil {
-		return true
+		return fmt.Errorf("connect aggregator at %s: %w", addr, err)
 	}
-	return len(lat.Records) == 0
+	defer func() { _ = conn.Close() }()
+
+	client := detectivev1.NewDetectiveServiceClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	return runStatus(ctx, client, output)
+}
+
+// forwardToInClusterAggregator discovers the detective-aggregator service
+// across all namespaces and sets up kubectl port-forward to it.
+func forwardToInClusterAggregator() (string, func(), error) {
+	nsOut, err := exec.Command("kubectl", "get", "svc", "detective-aggregator",
+		"-A", "-o", "jsonpath={.metadata.namespace}").Output()
+	if err != nil {
+		return "", nil, fmt.Errorf("aggregator service not found: %w", err)
+	}
+	namespace := strings.TrimSpace(string(nsOut))
+	if namespace == "" {
+		return "", nil, fmt.Errorf("aggregator service namespace is empty")
+	}
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return "", nil, err
+	}
+	port := listener.Addr().(*net.TCPAddr).Port
+	listener.Close()
+
+	aggAddr := fmt.Sprintf("127.0.0.1:%d", port)
+	ctx, cancel := context.WithCancel(context.Background())
+	pf := exec.CommandContext(ctx, "kubectl", "port-forward",
+		"-n", namespace,
+		"svc/detective-aggregator",
+		fmt.Sprintf("%d:50051", port))
+	pf.Stdout = nil
+	pf.Stderr = nil
+	_ = pf.Start()
+
+	// Wait for the forward to become ready by probing.
+	for i := 0; i < 20; i++ {
+		time.Sleep(100 * time.Millisecond)
+		if probeAggregator(aggAddr) == nil {
+			cleanup := func() { cancel(); _ = pf.Process.Kill() }
+			return aggAddr, cleanup, nil
+		}
+	}
+	cancel()
+	_ = pf.Process.Kill()
+	return "", nil, fmt.Errorf("port-forward did not become ready")
 }
 
 // runStatusInKind runs the status command inside a kind node where the
