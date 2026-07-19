@@ -29,7 +29,7 @@ To use `kubectl detective`, you need both the **kubectl plugin (CLI)** and the *
 
 ### Prerequisites
 
-- Go 1.21 or later
+- Go 1.26 or later
 - kubectl (connected to a cluster)
 - Helm 3
 - Docker (for compiling the eBPF object)
